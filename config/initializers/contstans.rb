@@ -1,0 +1,1 @@
+DATA_TYPES = %w(String Integer Float Date DateTime Time)

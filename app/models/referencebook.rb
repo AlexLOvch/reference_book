@@ -38,7 +38,7 @@ class Referencebook < ActiveRecord::Base
     end  
   end  
 
-  #input '10.0' или ['10.0','12.03.2013'....]          
+  #input '10.0' or ['10.0','12.03.2013'....]          
   def find_records(values)
      values=[values] unless values.is_a?(Array)    
     Storage.find_records_by_values(self,values)

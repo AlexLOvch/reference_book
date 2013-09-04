@@ -13,7 +13,7 @@
 class Attrib < ActiveRecord::Base
   attr_accessible :name, :referencebook_id, :data_type
   validates_uniqueness_of :name, :scope => :referencebook_id
-  validates_inclusion_of :data_type, in: %w(String Integer Float Date DateTime Time)
+  validates_inclusion_of :data_type, in: DATA_TYPES
   
   belongs_to :referencebook
 
