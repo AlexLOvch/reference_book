@@ -1,3 +1,4 @@
+# encoding: utf-8
 # == Schema Information
 #
 # Table name: storages
@@ -23,26 +24,45 @@ class Storage < ActiveRecord::Base
 
   def value_typecast
     unless Storage.typecast(data,attrib.data_type)
-      errors.add(:data, "Typecast error")
+      errors.add("Ошибка в аттрибуте #{attrib.name}!"," Неверный формат данных.")    
     end
   end  
 
-  #output {:record_no=>1, :attribs=>[[{:storage_id=>1, :attrib_id=>1, :data=>10.0}], [{:storage_id=>2, :attrib_id=>2, :data=>Sun, 11 Sep 2011}]]}
-  def self.record(referencebook,record_no)
-    rec=where({ :attrib_id => [referencebook.attribs.map(&:id)], :record_no => record_no }).includes(:attrib).map{|atr| [storage_id:  atr.id, attrib_id: atr.attrib.id, data: atr.data]}
-    {record_no: record_no}.merge(attribs: rec) if rec.any?
+
+  def self.delete_record(referencebook_id,record_no)
+    destroy_all({ :attrib_id => [Referencebook.find(referencebook_id).attribs.map(&:id)], :record_no => record_no })
   end  
+
+
 
   def self.record_exist?(referencebook,record_no)
     where({ :attrib_id => [referencebook.attribs.map(&:id)], :record_no => record_no }).count>0
   end    
 
 
-  #output [{:record_no=>1, :attribs=>[[{:storage_id=>1, :attrib_id=>1, :data=>10.0}], [{:storage_id=>2, :attrib_id=>2, :data=>Sun, 11 Sep 2011}]]}, {:record_no=>2, ....]
-  def self.records(referencebook)
-    where({ :attrib_id => [referencebook.attribs.map(&:id)]}).order(:record_no).includes(:attrib).group_by{|r|r.record_no}.map do |n,r| 
-      attr_arr = r.map{|atr| [storage_id:  atr.id, attrib_id: atr.attrib.id, data: atr.data]}
-      {record_no: n, attribs: attr_arr} if attr_arr.any?
+  #output [{:record_no=>1, :attribs=>[{:storage_id=>1, :attrib_id=>1, :data=>10.0}, {:storage_id=>2, :attrib_id=>2, :data=>Sun, 11 Sep 2011}]}, {:record_no=>2, ....]
+  def self.records(referencebook,record_no=nil,find_values=nil)
+    all_attrib_ids=referencebook.attribs.map(&:id)
+    
+    where_hash={ :attrib_id => all_attrib_ids}
+    where_hash.merge!({:data=>find_values}) if find_values
+    where_hash.merge!({:record_no=>record_no}) if record_no
+    where(where_hash).order(:record_no).includes(:attrib).group_by{|r|r.record_no}.map do |n,r| 
+      attr_arr = r.map{|atr| {storage_id:  atr.id, attrib_id: atr.attrib.id, data: atr.data} }
+      # if any? new attribs without data - return storage_id:  nil
+      if all_attrib_ids.size>attr_arr.size
+         attribs_without_data=all_attrib_ids.reject{ |attrib_id| attr_arr.any?{|attr_hash| attrib_id==attr_hash[:attrib_id]} }
+         non_existent_records=attribs_without_data.map{|atr_id| {storage_id:  nil, attrib_id: atr_id, data: ''} } if attribs_without_data.any?
+         attr_arr = attr_arr + non_existent_records if non_existent_records.any?
+      end  
+
+      if attr_arr.any?
+        if find_values
+          records(referencebook,n).first
+        else  
+          {record_no: n, attribs: attr_arr} 
+        end  
+      end
     end  
   end  
 
@@ -65,17 +85,9 @@ class Storage < ActiveRecord::Base
   end
 
 
-  def self.find_records_by_values(referencebook,values)
-    where({ :attrib_id => [referencebook.attribs.map(&:id)], :data=>values}).order(:record_no).includes(:attrib).group_by{|r|r.record_no}.map do |n,r| 
-      attr_arr = r.map{|atr| [storage_id:  atr.id, attrib_id: atr.attrib.id, data: atr.data]}
-      {record_no: n, attribs: attr_arr} if attr_arr.any?
-    end
-  end  
-
-
 
   def self.typecast(value,type)
-    return value if value.is_a?(type.constantize)
+    return value if value.nil? || value.is_a?(type.constantize) || value.empty?
     
     begin
       value=case type

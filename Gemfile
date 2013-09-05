@@ -4,6 +4,8 @@ gem 'rails', '3.2.13'
 gem 'sqlite3'
 gem 'activeadmin'
 gem "meta_search",    '>= 1.1.0.pre'
+gem 'jquery-rails', "2.3.0"
+gem "best_in_place"
 
 
 
@@ -16,7 +18,6 @@ group :assets do
   gem 'uglifier', '>= 1.0.3'
 end
 
-gem 'jquery-rails'
 
 group :development do
   gem 'annotate'

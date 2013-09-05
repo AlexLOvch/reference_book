@@ -19,10 +19,4 @@ class Attrib < ActiveRecord::Base
 
   has_many :storages, dependent: :destroy
 
-
- 
-
-private
-
-
 end

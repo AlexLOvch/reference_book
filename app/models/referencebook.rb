@@ -19,7 +19,7 @@ class Referencebook < ActiveRecord::Base
 
 
   def record(record_no)
-    Storage.record(self,record_no)
+    Storage.records(self,record_no,nil)
   end  
 
   def records
@@ -27,12 +27,13 @@ class Referencebook < ActiveRecord::Base
   end  
 
 
-  #       attrib_id => value
-  #input {1        => 20.0  ,2=>'13.05.2004'}
-  def add_record(values)
+  #              attrib_id => value
+  #input: nil or {1        => 20.0  ,2=>'13.05.2004'}
+  def add_record(values=nil)
+              #new empty record
+    values||= self.attribs.inject({}){|hsh,atr| hsh.merge({atr.id =>''})}
     return unless values.is_a?(Hash)    
-    values.merge({record_no:  self.record_count+1})
-    if Storage.record=values
+    if Storage.record=values.merge({record_no:  self.record_count+1})
       self.record_count+=1
       save
     end  
@@ -41,8 +42,7 @@ class Referencebook < ActiveRecord::Base
   #input '10.0' or ['10.0','12.03.2013'....]          
   def find_records(values)
      values=[values] unless values.is_a?(Array)    
-    Storage.find_records_by_values(self,values)
+    Storage.records(self,nil,values)
   end  
-
 
 end
